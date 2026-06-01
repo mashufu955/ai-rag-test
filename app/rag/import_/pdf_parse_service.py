@@ -1,3 +1,4 @@
+import shutil
 import time
 import requests
 
@@ -5,10 +6,11 @@ from app.process.import_.agent.state import ImportGraphState
 from pathlib import Path
 
 from app.rag.import_.config import MINERU_MODEL_VERSION, MINERU_DOWNLOAD_TIMEOUT_SECONDS, MINERU_POLL_TIMEOUT_SECONDS, MINERU_POLL_INTERVAL_SECONDS
-from app.shared.runtime.logger import logger, PROJECT_ROOT
+from app.shared.runtime.logger import logger, PROJECT_ROOT, step_log
 from app.infra.config.providers import infra_config
 
 # 1. pdf dir路径校验和完善
+@step_log("validate_pdf_paths")
 def validate_pdf_paths(state: ImportGraphState) -> tuple[Path, Path]:
     # 1. 读取 'pdf_path' 和 'local_dir'
     pdf_path = state.get("pdf_path")
@@ -35,6 +37,7 @@ def validate_pdf_paths(state: ImportGraphState) -> tuple[Path, Path]:
     # 7. 返回'pdf_path_obj' 与 'local_dir_obj'
     return pdf_path_obj, local_dir_obj
 
+@step_log("upload_pdf_and_poll")
 def upload_pdf_and_poll(pdf_path_obj:Path) -> str:
     # 1. 校验 MinerU 配置是否完整
     if not infra_config.mineru.base_url or not infra_config.mineru.api_key:
@@ -146,12 +149,66 @@ def upload_pdf_and_poll(pdf_path_obj:Path) -> str:
         logger.warning(f"{pdf_path_obj.name}minerU正在解析中......")
         time.sleep(interval_time)
 
+@step_log("download_and_extract_markdown")
+def download_and_extract_markdown(zip_url: str, local_dir_path_obj: Path, stem: str) -> Path:
+    # 1. 下载 MinerU 返回的 ZIP 结果包
+    response = requests.get(zip_url, timeout=MINERU_DOWNLOAD_TIMEOUT_SECONDS)
+    # 响应状态码
+    if response.status_code != 200:
+        logger.error(f"下载地址：{zip_url}下载失败，响应状态码为：{response.status_code}，业务无法继续进行！")
+        raise RuntimeError(f"下载地址：{zip_url}下载失败，响应状态码为：{response.status_code}，业务无法继续进行！")
+    # 2. 将 zip 保存到输出目录
+    # 目标存储位置
+    zip_path_obj : Path = local_dir_path_obj / f"{stem}_result.zip"
+    zip_path_obj.write_bytes(response.content)
+    # 3. 清理解压目录并重新解压
+    # 定义解压的文件夹 output / 文件名
+    zip_extract_dir_obj = local_dir_path_obj / stem
+    # 判断是否是真实有效的文件夹 存在 同时文件夹
+    if zip_extract_dir_obj.is_dir():
+        # 清空解压的文件夹
+        shutil.rmtree(zip_extract_dir_obj)
+    zip_extract_dir_obj.mkdir(parents=True, exist_ok=True)
+
+    # 要解压的压缩文件  解压的目标文件夹
+    shutil.unpack_archive(zip_path_obj, zip_extract_dir_obj)
+    # 4. 在解压目录中递归查找 '.md' 文件
+    md_file_obj_list = list(zip_extract_dir_obj.rglob("*.md"))
+    if not md_file_obj_list or len(md_file_obj_list) == 0:
+        # 没有找到md文件
+        logger.error(f"{zip_url}下载的zip包中没有找到md文件，请检查！")
+        raise RuntimeError(f"{zip_url}下载的zip包中没有找到md文件，请检查！")
+    # 5. 优先选择与原 PDF 同名的 Markdown 文件
+    # 取原文件名
+    for md_file_obj in md_file_obj_list:
+        # 解压的文件名 == 原始的文件名
+        if md_file_obj.stem == stem:
+            logger.info(f"找到与原 PDF 同名的 Markdown 文件：{md_file_obj.name}")
+            return md_file_obj
+    # 6. 若没有同名文件，则退化选择 'full.md' 或第一个 Markdown 文件
+    target_md_obj = None
+    # 取full文件名
+    for md_file_obj_new in md_file_obj_list:
+        if md_file_obj_new.name.lower() == "full.md":
+            target_md_obj = md_file_obj_new
+            break
+    # 异常兜底不规则命名，但是一定能取到值！
+    if not target_md_obj:
+        target_md_obj = md_file_obj_list[0]
+
+    # 7. 统一重命名为 '{stem}.md' 并返回路径
+    logger.info(f"进行解压md文件重命名，原名称为：{target_md_obj}，目标名称：{stem}.md")
+    return target_md_obj.rename(target_md_obj.with_name(f"{stem}.md"))
+
+@step_log("parse_pdf_to_markdown")
 def parse_pdf_to_markdown(state: ImportGraphState) -> ImportGraphState:
     # 1. pdf dir路径校验和完善
     pdf_path_obj, local_dir_obj = validate_pdf_paths(state)
-
     # 2. pdf上传和zip url地址获取
     zip_url = upload_pdf_and_poll(pdf_path_obj)
-
-    print(zip_url)
+    # 3. 下载解压并返回md_path的Path对象
+    md_path_obj = download_and_extract_markdown(zip_url, local_dir_obj, pdf_path_obj.stem)
+    # 4. 修改state状态 md_path : str | m_content
+    state['md_content'] = md_path_obj.read_text(encoding="utf-8")
+    state['md_path'] = str(md_path_obj)
     return state
