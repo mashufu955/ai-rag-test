@@ -1,7 +1,7 @@
 """
 MinerU 门面模块，统一封装 PDF 解析服务的连接配置访问。
 """
-from app.infra.config import infra_config
+from app.infra.config.providers import infra_config
 
 
 class MinerUGateway:

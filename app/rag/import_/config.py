@@ -8,3 +8,9 @@ MINERU_POLL_TIMEOUT_SECONDS = 600
 MINERU_POLL_INTERVAL_SECONDS = 3
 # MinerU 文件下载超时时间（单位：秒），下载文件超过此时长则中断
 MINERU_DOWNLOAD_TIMEOUT_SECONDS = 30
+
+CHUNK_MAX_SIZE = 1000
+# 文本切块基准长度：单个文本块理想大小为 600 字符（兼顾语义完整性 + 检索精度）
+CHUNK_SIZE = 600
+# 文本块重叠长度：相邻块之间重叠 20 字符，保证语义不被切断、上下文连贯
+CHUNK_OVERLAP = 50

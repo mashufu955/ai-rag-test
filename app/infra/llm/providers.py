@@ -3,7 +3,7 @@
 """
 from langchain_openai import ChatOpenAI
 
-from app.infra.config import infra_config
+from app.infra.config.providers import infra_config
 from app.shared.model import generate_embeddings, get_bge_m3_ef, get_llm_client, get_reranker_model
 
 

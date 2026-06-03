@@ -83,6 +83,7 @@ def upload_pdf_and_poll(pdf_path_obj:Path) -> str:
             # session使用和requests是一样的
             # 作用1： 可以服用请求 requests.Session() session.get() post     session.close() [不复用]
             # 作用2： 有些特殊的设置 trust_env=False 不信任环境
+            session.trust_env = False
             put_response = session.put(upload_file_url,data=pdf_path_obj.read_bytes())
             if put_response.status_code != 200:
                 logger.error(f"向地址:{upload_file_url}上传文件发生异常,状态码:{put_response.status_code},业务无法继续!!")

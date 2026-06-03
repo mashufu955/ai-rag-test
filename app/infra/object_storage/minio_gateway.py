@@ -4,7 +4,7 @@ MinIO 门面模块，统一封装对象存储客户端与桶配置访问。
 from minio import Minio
 
 from app.shared.clients.minio_utils import get_minio_client
-from app.infra.config import infra_config
+from app.infra.config.providers import infra_config
 
 
 class MinIOGateway:
