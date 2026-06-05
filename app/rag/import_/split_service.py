@@ -201,7 +201,7 @@ def _merge_short_chunks(final_chunks:list[dict],max_length:int = CHUNK_MAX_SIZE,
             merged_content = start_content + "\n" + next_content_to_title
             if len(merged_content) <= max_length:
                 start_chunk['content'] = merged_content
-                logger.info(f"父标题：{start_chunk['parent_title']}, start: {start_chunk['title']}, next: {next_chunk['title']} 完成合并！")
+                logger.info(f"父标题：{start_chunk['parent_title']}, start: {start_chunk['title']} next: {next_chunk['title']} 完成合并！")
             else:
                 final_merge_chunks.append(start_chunk)
                 start_chunk = next_chunk
