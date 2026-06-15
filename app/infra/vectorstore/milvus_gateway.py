@@ -1,6 +1,8 @@
+from pymilvus import AnnSearchRequest
 
 from app.infra.config.providers import infra_config
-from app.shared.clients.milvus_utils import get_milvus_client
+from app.shared.clients.milvus_utils import get_milvus_client, create_hybrid_search_requests, hybrid_search
+
 
 class MilvusGateway:
 
@@ -13,5 +15,43 @@ class MilvusGateway:
     @property
     def client(self):
         return get_milvus_client()
+
+    # 新引入
+    def create_requests(
+            self,
+            dense_vector: list[float],
+            sparse_vector: list[int, float],
+            *,
+            expr: str = None,
+            limit: int = 5
+    ):
+        return create_hybrid_search_requests(
+            dense_vector=dense_vector,
+            sparse_vector=sparse_vector,
+            expr=expr,
+            limit=limit
+        )
+
+    def hybrid_search(
+            self,
+            *,
+            collection_name: str,
+            reqs: list[AnnSearchRequest],
+            ranker_weights: tuple[float, float]=(0.5, 0.5),
+            norm_score: bool = False,
+            limit: int = 5,
+            output_fields: list[str] | None = None,
+            search_params: dict | None = None
+    ):
+        return hybrid_search(
+            client=self.client,
+            collection_name=collection_name,
+            reqs=reqs,
+            ranker_weights=ranker_weights,
+            norm_score=norm_score,
+            limit=limit,
+            output_fields=output_fields,
+            search_params=search_params
+        )
 
 milvus_gateway = MilvusGateway()

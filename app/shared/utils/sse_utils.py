@@ -79,9 +79,19 @@ async def sse_generator(session_id: str, request: Request):
                 break
 
             try:
+                # from concurrent.futures import ThreadPoolExecutor
+                # executor = ThreadPoolExecutor(max_workers=10)
                 # 使用 run_in_executor 避免阻塞 async 事件循环
                 # {event:"process" : data: {任务状态 / 已完成节点 / 进行中节点}}
                 msg = await loop.run_in_executor(None, stream_queue.get, True, 1.0)
+                # stream_queue.get()
+                # msg:dict[event,data] =  stream_queue.get(block=True,timeout=1)  == time.sleep(1) = 线程级别
+                # msg = stream_queue.get() -> 获取数据! 有就获取 没有直接跳过!
+                # 方案1: 同步换成异步  asyncio.queue  .get()
+                # 方案2: 同步队列
+                # sse even: 事件\n data: 数据\n\n
+                # yield msg
+
             except queue.Empty:
                 # print(f"[SSE] Queue empty for {session_id}, waiting...")
                 continue

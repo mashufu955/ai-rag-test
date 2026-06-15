@@ -77,9 +77,11 @@ def add_running_task(task_id: str, node_name: str, is_stream: bool = False) -> N
     - node_name: 节点名称(节点ID)
     """
     _ensure_task(task_id)
+    # task_id 对应列表 []
     running = _tasks_running_list[task_id]
     # 避免重复追加
     if node_name not in running:
+        # [node_entry]
         running.append(node_name)
 
     if is_stream:
@@ -147,6 +149,7 @@ def get_done_task_list(task_id: str) -> List[str]:
 
     """
     _ensure_task(task_id)
+    # ["node_entry"]
     done = _tasks_done_list.get(task_id, [])
     return [_to_cn(n) for n in done]
 

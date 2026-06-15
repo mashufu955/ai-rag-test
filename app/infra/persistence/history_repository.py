@@ -1,6 +1,3 @@
-"""
-历史记录仓储模块，统一封装聊天记录的读写操作。
-"""
 from app.shared.clients.mongo_history_utils import (
     clear_history,
     get_recent_messages,

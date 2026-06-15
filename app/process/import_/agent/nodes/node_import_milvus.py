@@ -40,7 +40,7 @@ if __name__ == '__main__':
                 "item_name": "测试项目_Milvus",  # 必须有 item_name，用于幂等清理
                 "parent_title":"test.pdf",
                 "part":1,
-                "file_title": "test.pdf",
+                "file_title": "文件名.md",
                 "dense_vector": [0.1] * dim,  # 模拟 Dense Vector
                 "sparse_vector": {1: 0.5, 10: 0.8}  # 模拟 Sparse Vector
             }
@@ -51,7 +51,7 @@ if __name__ == '__main__':
                 "item_name": "测试项目_Milvus2",  # 必须有 item_name，用于幂等清理
                 "parent_title": "test.pdf2",
                 "part": 1,
-                "file_title": "test.pdf2",
+                "file_title": "文件名.md",
                 "dense_vector": [0.1] * dim,  # 模拟 Dense Vector
                 "sparse_vector": {1: 0.5, 10: 0.8}  # 模拟 Sparse Vector
             }
